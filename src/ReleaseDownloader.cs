@@ -15,10 +15,12 @@ namespace GitHub_Release_Downloader
 
         private readonly HttpClient _client;
         private readonly Action<string> _log;
+        private readonly bool _authenticated;
 
-        public ReleaseDownloader(Action<string> log)
+        public ReleaseDownloader(Action<string> log, string? token = null)
         {
             _log = log;
+            _authenticated = !string.IsNullOrWhiteSpace(token);
 
             _client = new HttpClient
             {
@@ -31,6 +33,14 @@ namespace GitHub_Release_Downloader
             _client.DefaultRequestHeaders.Accept.Add(
                 new MediaTypeWithQualityHeaderValue("application/vnd.github+json"));
             _client.DefaultRequestHeaders.Add("X-GitHub-Api-Version", "2022-11-28");
+
+            if (_authenticated)
+            {
+                // HttpClient drops this header on a cross-origin redirect, so the token
+                // never reaches the CDN host that actually serves the asset bytes.
+                _client.DefaultRequestHeaders.Authorization =
+                    new AuthenticationHeaderValue("Bearer", token!.Trim());
+            }
         }
 
         public void Dispose() => _client.Dispose();
@@ -197,11 +207,18 @@ namespace GitHub_Release_Downloader
                 .ConfigureAwait(false);
         }
 
-        private static string DescribeFailure(HttpResponseMessage response, string url)
+        private string DescribeFailure(HttpResponseMessage response, string url)
         {
             if (response.StatusCode == HttpStatusCode.NotFound)
             {
-                return "Repository or release not found (is it private?).";
+                return _authenticated
+                    ? "Repository or release not found (does the token grant access to it?)."
+                    : "Repository or release not found - private repositories need a token.";
+            }
+
+            if (response.StatusCode == HttpStatusCode.Unauthorized)
+            {
+                return "GitHub rejected the token (401). Check it on the Settings tab.";
             }
 
             var remaining = response.Headers.TryGetValues("X-RateLimit-Remaining", out var values)
@@ -211,7 +228,9 @@ namespace GitHub_Release_Downloader
             if (response.StatusCode is HttpStatusCode.Forbidden or HttpStatusCode.TooManyRequests &&
                 remaining == "0")
             {
-                return "GitHub API rate limit exhausted (60 requests/hour without a token).";
+                return _authenticated
+                    ? "GitHub API rate limit exhausted (5000 requests/hour)."
+                    : "GitHub API rate limit exhausted - add a token on the Settings tab for 5000/hour.";
             }
 
             return $"{(int)response.StatusCode} {response.ReasonPhrase} for {url}";

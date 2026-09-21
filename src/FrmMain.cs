@@ -59,10 +59,8 @@ namespace GitHub_Release_Downloader
 
             var options = new DownloadOptions
             {
-                // "latest only" means the newest stable release; otherwise take the lot,
-                // pre-releases included, since there is no separate switch for them.
                 AllReleases = !chkLatestOnly.Checked,
-                IncludePreReleases = !chkLatestOnly.Checked,
+                IncludePreReleases = chkPreRelease.Checked,
                 IncludeSourceArchives = chkSources.Checked,
                 SkipExisting = rbSkip.Checked,
             };
@@ -75,7 +73,7 @@ namespace GitHub_Release_Downloader
 
             try
             {
-                using var downloader = new ReleaseDownloader(Log);
+                using var downloader = new ReleaseDownloader(Log, txtToken.Text);
                 var progress = new Progress<DownloadProgress>(Report);
 
                 var summary = await downloader.RunAsync(
@@ -131,9 +129,11 @@ namespace GitHub_Release_Downloader
         private void SetRunning(bool running)
         {
             txtUrl.Enabled = !running;
+            txtToken.Enabled = !running;
             txtPath.Enabled = !running;
             btnBrowse.Enabled = !running;
             chkSources.Enabled = !running;
+            chkPreRelease.Enabled = !running;
             chkLatestOnly.Enabled = !running;
             rbSkip.Enabled = !running;
             rbOverwrite.Enabled = !running;
