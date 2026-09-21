@@ -44,7 +44,7 @@ namespace GitHub_Release_Downloader
     /// </summary>
     internal sealed record DownloadItem(string Url, string FileName, long? ExpectedSize);
 
-    internal sealed record DownloadOptions
+    public sealed record DownloadOptions
     {
         /// <summary>
         ///  When set, files land in &lt;target&gt;/&lt;owner&gt;/&lt;repo&gt;/&lt;tag&gt;;
@@ -61,12 +61,12 @@ namespace GitHub_Release_Downloader
         public bool SkipExisting { get; init; } = true;
     }
 
-    internal sealed record DownloadProgress(
+    public sealed record DownloadProgress(
         int FileIndex,
         int FileCount,
         string FileName,
         long BytesReceived,
         long? BytesTotal);
 
-    internal sealed record DownloadSummary(int Downloaded, int Skipped, int Failed);
+    public sealed record DownloadSummary(int Downloaded, int Skipped, int Failed);
 }

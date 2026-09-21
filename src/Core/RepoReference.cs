@@ -5,7 +5,7 @@ namespace GitHub_Release_Downloader
     /// <summary>
     ///  Owner/repository pair parsed out of whatever the user typed into the URL box.
     /// </summary>
-    internal sealed partial record RepoReference(string Owner, string Repo)
+    public sealed partial record RepoReference(string Owner, string Repo)
     {
         public override string ToString() => $"{Owner}/{Repo}";
 

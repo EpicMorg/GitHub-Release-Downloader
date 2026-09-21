@@ -1,6 +1,7 @@
 using System.Net;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
+using System.Text.Json.Serialization.Metadata;
 
 namespace GitHub_Release_Downloader
 {
@@ -8,7 +9,7 @@ namespace GitHub_Release_Downloader
     ///  Pulls release assets from the GitHub API into
     ///  &lt;target&gt;/&lt;owner&gt;/&lt;repo&gt;/&lt;tag&gt;/&lt;file&gt;.
     /// </summary>
-    internal sealed class ReleaseDownloader : IDisposable
+    public sealed class ReleaseDownloader : IDisposable
     {
         private const string ApiRoot = "https://api.github.com";
         private const int PageSize = 100;
@@ -155,8 +156,8 @@ namespace GitHub_Release_Downloader
                 var url = $"{ApiRoot}/repos/{reference.Owner}/{reference.Repo}" +
                           $"/releases?per_page={PageSize}&page={page}";
 
-                var batch = await GetJsonAsync<List<GitHubRelease>>(url, cancellationToken)
-                    .ConfigureAwait(false);
+                var batch = await GetJsonAsync(url, GitHubJsonContext.Default.ListGitHubRelease,
+                    cancellationToken).ConfigureAwait(false);
 
                 if (batch is null || batch.Count == 0)
                 {
@@ -184,18 +185,22 @@ namespace GitHub_Release_Downloader
             if (options.IncludePreReleases)
             {
                 var url = $"{ApiRoot}/repos/{reference.Owner}/{reference.Repo}/releases?per_page=1";
-                var batch = await GetJsonAsync<List<GitHubRelease>>(url, cancellationToken)
-                    .ConfigureAwait(false);
+                var batch = await GetJsonAsync(url, GitHubJsonContext.Default.ListGitHubRelease,
+                    cancellationToken).ConfigureAwait(false);
 
                 return batch?.FirstOrDefault(r => !r.Draft);
             }
 
-            return await GetJsonAsync<GitHubRelease>(
+            return await GetJsonAsync(
                 $"{ApiRoot}/repos/{reference.Owner}/{reference.Repo}/releases/latest",
+                GitHubJsonContext.Default.GitHubRelease,
                 cancellationToken).ConfigureAwait(false);
         }
 
-        private async Task<T?> GetJsonAsync<T>(string url, CancellationToken cancellationToken)
+        private async Task<T?> GetJsonAsync<T>(
+            string url,
+            JsonTypeInfo<T> typeInfo,
+            CancellationToken cancellationToken)
         {
             using var response = await _client.GetAsync(url, cancellationToken).ConfigureAwait(false);
 
@@ -205,7 +210,7 @@ namespace GitHub_Release_Downloader
             }
 
             return await response.Content
-                .ReadFromJsonAsync<T>(cancellationToken)
+                .ReadFromJsonAsync(typeInfo, cancellationToken)
                 .ConfigureAwait(false);
         }
 
