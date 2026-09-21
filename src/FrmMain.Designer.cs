@@ -34,6 +34,10 @@
             btnBrowse = new Button();
             txtPath = new TextBox();
             gbProgress = new GroupBox();
+            rbOverwrite = new RadioButton();
+            rbSkip = new RadioButton();
+            chkLatestOnly = new CheckBox();
+            chkSources = new CheckBox();
             pbDownload = new ProgressBar();
             btnDownload = new Button();
             txtLog = new TextBox();
@@ -59,7 +63,7 @@
             txtUrl.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
             txtUrl.Location = new Point(6, 22);
             txtUrl.Name = "txtUrl";
-            txtUrl.Size = new Size(626, 23);
+            txtUrl.Size = new Size(616, 23);
             txtUrl.TabIndex = 0;
             // 
             // gbPath
@@ -77,7 +81,7 @@
             // btnBrowse
             // 
             btnBrowse.Anchor = AnchorStyles.Top | AnchorStyles.Right;
-            btnBrowse.Location = new Point(557, 22);
+            btnBrowse.Location = new Point(547, 22);
             btnBrowse.Name = "btnBrowse";
             btnBrowse.Size = new Size(75, 23);
             btnBrowse.TabIndex = 1;
@@ -90,12 +94,16 @@
             txtPath.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
             txtPath.Location = new Point(6, 22);
             txtPath.Name = "txtPath";
-            txtPath.Size = new Size(545, 23);
+            txtPath.Size = new Size(535, 23);
             txtPath.TabIndex = 0;
             // 
             // gbProgress
             // 
             gbProgress.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
+            gbProgress.Controls.Add(rbOverwrite);
+            gbProgress.Controls.Add(rbSkip);
+            gbProgress.Controls.Add(chkLatestOnly);
+            gbProgress.Controls.Add(chkSources);
             gbProgress.Controls.Add(pbDownload);
             gbProgress.Controls.Add(btnDownload);
             gbProgress.Controls.Add(txtLog);
@@ -105,6 +113,51 @@
             gbProgress.TabIndex = 2;
             gbProgress.TabStop = false;
             gbProgress.Text = "Progress";
+            // 
+            // rbOverwrite
+            // 
+            rbOverwrite.Anchor = AnchorStyles.Top | AnchorStyles.Right;
+            rbOverwrite.AutoSize = true;
+            rbOverwrite.Location = new Point(553, 21);
+            rbOverwrite.Name = "rbOverwrite";
+            rbOverwrite.Size = new Size(76, 19);
+            rbOverwrite.TabIndex = 6;
+            rbOverwrite.TabStop = true;
+            rbOverwrite.Text = "Overwrite";
+            rbOverwrite.UseVisualStyleBackColor = true;
+            // 
+            // rbSkip
+            // 
+            rbSkip.Anchor = AnchorStyles.Top | AnchorStyles.Right;
+            rbSkip.AutoSize = true;
+            rbSkip.Location = new Point(500, 21);
+            rbSkip.Checked = true;
+            rbSkip.Name = "rbSkip";
+            rbSkip.Size = new Size(47, 19);
+            rbSkip.TabIndex = 5;
+            rbSkip.TabStop = true;
+            rbSkip.Text = "Skip";
+            rbSkip.UseVisualStyleBackColor = true;
+            // 
+            // chkLatestOnly
+            // 
+            chkLatestOnly.AutoSize = true;
+            chkLatestOnly.Location = new Point(136, 22);
+            chkLatestOnly.Name = "chkLatestOnly";
+            chkLatestOnly.Size = new Size(173, 19);
+            chkLatestOnly.TabIndex = 4;
+            chkLatestOnly.Text = "Download latest release only";
+            chkLatestOnly.UseVisualStyleBackColor = true;
+            // 
+            // chkSources
+            // 
+            chkSources.AutoSize = true;
+            chkSources.Location = new Point(6, 22);
+            chkSources.Name = "chkSources";
+            chkSources.Size = new Size(124, 19);
+            chkSources.TabIndex = 3;
+            chkSources.Text = "Download Sources";
+            chkSources.UseVisualStyleBackColor = true;
             // 
             // pbDownload
             // 
@@ -123,14 +176,17 @@
             btnDownload.TabIndex = 1;
             btnDownload.Text = "Download";
             btnDownload.UseVisualStyleBackColor = true;
+            btnDownload.Click += btnDownload_Click;
             // 
             // txtLog
             // 
             txtLog.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
-            txtLog.Location = new Point(6, 22);
+            txtLog.Location = new Point(6, 47);
             txtLog.Multiline = true;
             txtLog.Name = "txtLog";
-            txtLog.Size = new Size(626, 161);
+            txtLog.ReadOnly = true;
+            txtLog.ScrollBars = ScrollBars.Vertical;
+            txtLog.Size = new Size(626, 136);
             txtLog.TabIndex = 0;
             // 
             // fbdTarget
@@ -170,5 +226,9 @@
         private TextBox txtLog;
         private ProgressBar pbDownload;
         private FolderBrowserDialog fbdTarget;
+        private RadioButton rbOverwrite;
+        private RadioButton rbSkip;
+        private CheckBox chkLatestOnly;
+        private CheckBox chkSources;
     }
 }
