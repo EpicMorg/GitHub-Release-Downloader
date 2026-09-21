@@ -46,6 +46,12 @@ namespace GitHub_Release_Downloader
 
     internal sealed record DownloadOptions
     {
+        /// <summary>
+        ///  When set, files land in &lt;target&gt;/&lt;owner&gt;/&lt;repo&gt;/&lt;tag&gt;;
+        ///  otherwise the owner and repository levels are dropped.
+        /// </summary>
+        public bool CreateRepoSubfolders { get; init; } = true;
+
         public bool AllReleases { get; init; }
 
         public bool IncludePreReleases { get; init; }

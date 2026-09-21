@@ -9,6 +9,43 @@ namespace GitHub_Release_Downloader
             InitializeComponent();
         }
 
+        protected override void OnLoad(EventArgs e)
+        {
+            base.OnLoad(e);
+
+            var settings = AppSettings.Load();
+
+            txtUrl.Text = settings.Url;
+            txtPath.Text = settings.Path;
+            txtToken.Text = settings.Token;
+            chkAddSubFoldersToSelectedPath.Checked = settings.AddSubFolders;
+            chkLatestOnly.Checked = settings.LatestOnly;
+            chkPreRelease.Checked = settings.PreReleases;
+            chkSources.Checked = settings.Sources;
+            rbOverwrite.Checked = settings.Overwrite;
+            rbSkip.Checked = !settings.Overwrite;
+        }
+
+        private void SaveSettings()
+        {
+            var settings = new AppSettings
+            {
+                Url = txtUrl.Text.Trim(),
+                Path = txtPath.Text.Trim(),
+                Token = txtToken.Text.Trim(),
+                AddSubFolders = chkAddSubFoldersToSelectedPath.Checked,
+                LatestOnly = chkLatestOnly.Checked,
+                PreReleases = chkPreRelease.Checked,
+                Sources = chkSources.Checked,
+                Overwrite = rbOverwrite.Checked,
+            };
+
+            if (!settings.TrySave(out var error))
+            {
+                Log($"Could not save settings: {error}");
+            }
+        }
+
         private void btnBrowse_Click(object sender, EventArgs e)
         {
             var current = txtPath.Text.Trim();
@@ -59,11 +96,15 @@ namespace GitHub_Release_Downloader
 
             var options = new DownloadOptions
             {
+                CreateRepoSubfolders = chkAddSubFoldersToSelectedPath.Checked,
                 AllReleases = !chkLatestOnly.Checked,
                 IncludePreReleases = chkPreRelease.Checked,
                 IncludeSourceArchives = chkSources.Checked,
                 SkipExisting = rbSkip.Checked,
             };
+
+            // Persist now as well, so a crash mid-download does not lose the setup.
+            SaveSettings();
 
             _cancellation = new CancellationTokenSource();
             SetRunning(true);
@@ -117,7 +158,30 @@ namespace GitHub_Release_Downloader
 
         private void Log(string message)
         {
-            txtLog.AppendText($"{DateTime.Now:HH:mm:ss}  {message}{Environment.NewLine}");
+            // The downloader reports from a thread pool thread, so stamp the time here
+            // and hand the finished line to the UI thread.
+            var line = $"{DateTime.Now:HH:mm:ss}  {message}{Environment.NewLine}";
+
+            if (!txtLog.IsHandleCreated || txtLog.IsDisposed)
+            {
+                return;
+            }
+
+            if (txtLog.InvokeRequired)
+            {
+                txtLog.BeginInvoke(() => txtLog.AppendText(line));
+                return;
+            }
+
+            txtLog.AppendText(line);
+        }
+
+        protected override void OnFormClosing(FormClosingEventArgs e)
+        {
+            // Stop an in-flight download so its callbacks do not outlive the handle.
+            _cancellation?.Cancel();
+            SaveSettings();
+            base.OnFormClosing(e);
         }
 
         private void Warn(string message, Control focus)
@@ -133,6 +197,7 @@ namespace GitHub_Release_Downloader
             txtPath.Enabled = !running;
             btnBrowse.Enabled = !running;
             chkSources.Enabled = !running;
+            chkAddSubFoldersToSelectedPath.Enabled = !running;
             chkPreRelease.Enabled = !running;
             chkLatestOnly.Enabled = !running;
             rbSkip.Enabled = !running;

@@ -44,8 +44,9 @@
             lblTokenHint = new Label();
             txtToken = new TextBox();
             gbOptions = new GroupBox();
-            chkLatestOnly = new CheckBox();
+            chkAddSubFoldersToSelectedPath = new CheckBox();
             chkPreRelease = new CheckBox();
+            chkLatestOnly = new CheckBox();
             chkSources = new CheckBox();
             gbExisting = new GroupBox();
             rbSkip = new RadioButton();
@@ -227,6 +228,7 @@
             // gbOptions
             // 
             gbOptions.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
+            gbOptions.Controls.Add(chkAddSubFoldersToSelectedPath);
             gbOptions.Controls.Add(chkPreRelease);
             gbOptions.Controls.Add(chkLatestOnly);
             gbOptions.Controls.Add(chkSources);
@@ -235,7 +237,28 @@
             gbOptions.Size = new Size(618, 107);
             gbOptions.TabIndex = 1;
             gbOptions.TabStop = false;
-            gbOptions.Text = "What to download";
+            gbOptions.Text = "Download options";
+            // 
+            // chkAddSubFoldersToSelectedPath
+            // 
+            chkAddSubFoldersToSelectedPath.AutoSize = true;
+            chkAddSubFoldersToSelectedPath.Checked = true;
+            chkAddSubFoldersToSelectedPath.CheckState = CheckState.Checked;
+            chkAddSubFoldersToSelectedPath.Location = new Point(211, 22);
+            chkAddSubFoldersToSelectedPath.Name = "chkAddSubFoldersToSelectedPath";
+            chkAddSubFoldersToSelectedPath.Size = new Size(339, 19);
+            chkAddSubFoldersToSelectedPath.TabIndex = 3;
+            chkAddSubFoldersToSelectedPath.Text = "Add subfolders to selected path (eg ...\\<name>\\<repo>\\...)";
+            chkAddSubFoldersToSelectedPath.UseVisualStyleBackColor = true;
+            // 
+            // chkPreRelease
+            // 
+            chkPreRelease.AutoSize = true;
+            chkPreRelease.Location = new Point(6, 47);
+            chkPreRelease.Name = "chkPreRelease";
+            chkPreRelease.Size = new Size(141, 19);
+            chkPreRelease.TabIndex = 1;
+            chkPreRelease.Text = "Download prereleases";
             // 
             // chkLatestOnly
             // 
@@ -247,18 +270,11 @@
             chkLatestOnly.Text = "Download latest release only";
             chkLatestOnly.UseVisualStyleBackColor = true;
             // 
-            // chkPreRelease
-            // 
-            chkPreRelease.AutoSize = true;
-            chkPreRelease.Location = new Point(6, 47);
-            chkPreRelease.Name = "chkPreRelease";
-            chkPreRelease.Size = new Size(141, 19);
-            chkPreRelease.TabIndex = 1;
-            chkPreRelease.Text = "Download prereleases";
-            // 
             // chkSources
             // 
             chkSources.AutoSize = true;
+            chkSources.Checked = true;
+            chkSources.CheckState = CheckState.Checked;
             chkSources.Location = new Point(6, 72);
             chkSources.Name = "chkSources";
             chkSources.Size = new Size(123, 19);
@@ -357,5 +373,6 @@
         private RadioButton rbSkip;
         private RadioButton rbOverwrite;
         private FolderBrowserDialog fbdTarget;
+        private CheckBox chkAddSubFoldersToSelectedPath;
     }
 }

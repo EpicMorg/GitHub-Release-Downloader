@@ -73,11 +73,13 @@ namespace GitHub_Release_Downloader
                     continue;
                 }
 
-                var directory = Path.Combine(
-                    targetRoot,
-                    SanitizeSegment(reference.Owner),
-                    SanitizeSegment(reference.Repo),
-                    SanitizeSegment(tag));
+                var directory = options.CreateRepoSubfolders
+                    ? Path.Combine(
+                        targetRoot,
+                        SanitizeSegment(reference.Owner),
+                        SanitizeSegment(reference.Repo),
+                        SanitizeSegment(tag))
+                    : Path.Combine(targetRoot, SanitizeSegment(tag));
 
                 foreach (var item in EnumerateItems(reference, release, tag, options))
                 {
