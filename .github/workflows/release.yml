@@ -1,0 +1,173 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version to build (manual runs never publish a release)'
+        required: false
+        default: '0.0.0-manual'
+
+permissions:
+  contents: write
+
+env:
+  DOTNET_NOLOGO: true
+  DOTNET_CLI_TELEMETRY_OPTOUT: true
+  DOTNET_SKIP_FIRST_TIME_EXPERIENCE: true
+
+jobs:
+  # The WinForms app: Windows only, and never AOT - Windows Forms does not support it.
+  gui:
+    name: GUI (${{ matrix.rid }})
+    runs-on: ${{ matrix.os }}
+
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { os: windows-latest, rid: win-x64 }
+          - { os: windows-latest, rid: win-arm64 }
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Resolve version
+        id: version
+        shell: bash
+        run: |
+          if [ "$GITHUB_REF_TYPE" = "tag" ]; then
+            version="${GITHUB_REF_NAME#v}"
+          else
+            version="${{ inputs.version }}"
+          fi
+          [ -n "$version" ] || { echo "::error::could not resolve a version"; exit 1; }
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+
+      - name: Publish
+        shell: bash
+        run: >
+          dotnet publish "src/GUI/GitHub Release Downloader.csproj"
+          -c Release
+          -r ${{ matrix.rid }}
+          --self-contained true
+          -p:Version=${{ steps.version.outputs.version }}
+          -p:PublishSingleFile=true
+          -p:IncludeNativeLibrariesForSelfExtract=true
+          -p:DebugType=none
+          -o publish
+
+      - name: Package
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force artifacts | Out-Null
+          Compress-Archive -Path publish/* -DestinationPath `
+            "artifacts/GitHub-Release-Downloader-gui-${{ steps.version.outputs.version }}-${{ matrix.rid }}.zip"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: gui-${{ matrix.rid }}
+          path: artifacts/*
+          if-no-files-found: error
+
+  # The console app: native AOT. ILCompiler cannot cross-compile, so every RID
+  # is built on a runner of that same OS and architecture.
+  cli:
+    name: CLI (${{ matrix.rid }})
+    runs-on: ${{ matrix.os }}
+
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { os: ubuntu-latest,    rid: linux-x64,   archive: tar }
+          - { os: ubuntu-24.04-arm, rid: linux-arm64, archive: tar }
+          - { os: windows-latest,   rid: win-x64,     archive: zip }
+          - { os: windows-11-arm,   rid: win-arm64,   archive: zip }
+          - { os: macos-13,         rid: osx-x64,     archive: tar }
+          - { os: macos-latest,     rid: osx-arm64,   archive: tar }
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Install native toolchain
+        if: runner.os == 'Linux'
+        run: sudo apt-get update && sudo apt-get install -y clang zlib1g-dev
+
+      - name: Resolve version
+        id: version
+        shell: bash
+        run: |
+          if [ "$GITHUB_REF_TYPE" = "tag" ]; then
+            version="${GITHUB_REF_NAME#v}"
+          else
+            version="${{ inputs.version }}"
+          fi
+          [ -n "$version" ] || { echo "::error::could not resolve a version"; exit 1; }
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+
+      - name: Publish
+        shell: bash
+        run: >
+          dotnet publish "src/TUI/GitHub Release Downloader.Cli.csproj"
+          -c Release
+          -r ${{ matrix.rid }}
+          -p:Version=${{ steps.version.outputs.version }}
+          -o publish
+
+      - name: Package (tar.gz)
+        if: matrix.archive == 'tar'
+        shell: bash
+        run: |
+          mkdir -p artifacts
+          rm -f publish/*.dbg publish/*.dsym publish/*.pdb
+          tar -czf "artifacts/grd-${{ steps.version.outputs.version }}-${{ matrix.rid }}.tar.gz" \
+            -C publish .
+
+      - name: Package (zip)
+        if: matrix.archive == 'zip'
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force artifacts | Out-Null
+          Remove-Item publish/*.pdb -ErrorAction SilentlyContinue
+          Compress-Archive -Path publish/* -DestinationPath `
+            "artifacts/grd-${{ steps.version.outputs.version }}-${{ matrix.rid }}.zip"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: cli-${{ matrix.rid }}
+          path: artifacts/*
+          if-no-files-found: error
+
+  release:
+    needs: [gui, cli]
+    if: github.ref_type == 'tag'
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+          merge-multiple: true
+
+      - name: Checksums
+        working-directory: artifacts
+        run: sha256sum * > SHA256SUMS.txt
+
+      - name: Publish release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: artifacts/*
+          generate_release_notes: true
+          prerelease: ${{ contains(github.ref_name, '-') }}
